@@ -1,53 +1,86 @@
-# MarketViewerPro
+Stack: FastAPI (backend) + React/Vite (frontend) + Recharts (charts) + yfinance (data)
+Status: MVP working. Stable endpoints. Conservative signals. Good enough to iterate.
 
-Compact market intelligence dashboard:
-- Live OHLCV (multi-source with cache + stale-while-revalidate)
-- Baseline ML signals (RF + EMA fallback)
-- Curated news + sentiment
-- React + FastAPI + Docker
+What v1 does
 
-## Stack
+Prices + indicators
+OHLCV with SMA/EMA/RSI, volume change, price/MA ratios. Caching + multiple data sources. If a provider hiccups, it returns last good data marked as stale: true.
 
-Backend:
-- FastAPI
-- yfinance, Alpha Vantage (optional), SQLite cache
-- scikit-learn (RF), joblib
-- RSS + VADER sentiment
+Signals (baseline + RF v1)
+Next-day direction probability + tiny return estimate. Falls back to an honest EMA baseline if the model isn’t available or data is weird. Treat as research/paper trading only. All practice, not to be treated as financial advice.
 
-Frontend:
-- React + Vite
-- Recharts candlestick adapter
-- Dark, trader-friendly UI
+News + sentiment
+Curated RSS feeds, VADER sentiment, relevance boosted by ticker mentions. Filters by ticker, source, and min sentiment.
 
-## Dev Run
+Observability
+/api/health and /api/metrics to check model and data status.
 
-Backend:
+Quickstart
 
-```bash
+I run backend + frontend in two terminals. Windows commands shown (adjust for macOS/Linux).
+
+1) Backend (FastAPI)
 
 cd backend
-python -m venv .venv && source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+python -m venv venv
+venv\Scripts\activate
 pip install -r requirements.txt
+# optional: copy .env.example to .env (see below)
 uvicorn app.main:app --reload
+# API: http://127.0.0.1:8000
+# Docs: http://127.0.0.1:8000/docs
 
-Frontend:
+2) Frontend (React + Vite)
 
 cd frontend
 npm install
 npm run dev
+# App: http://localhost:5173
 
-Visit: http://localhost:5173
-Docker
 
-docker-compose up --build
+API cheat-sheet
 
-Frontend: http://localhost:5173
+GET /api/health → service + provider status
+GET /api/metrics → model metadata (name, last_trained_at, samples_used, etc.)
+GET /api/price?ticker=AAPL&range=6mo&interval=1d → OHLCV + indicators + {stale, source}
+GET /api/predict?ticker=AAPL → conservative next-day signal (RF v1 or EMA baseline)
+GET /api/news?ticker=AAPL&limit=30&min_sentiment=-0.2&source=Reuters → curated news
+Errors are structured. Common ones:
+{"code":"no_data"} → bad/unknown ticker (returns 404)
+{"code":"upstream_failed"} → data providers down (returns 502)
 
-Backend: http://localhost:8000/docs
-Notes
+3) Training Model
 
-    ML is experimental: for research & paper trading.
+cd backend
+venv\Scripts\activate
+python train_models.py --tickers SPY,AAPL,MSFT,NVDA,AVGO,META,GOOGL,AMZN,TSLA --period 5y
+# This writes models/*.joblib (gitignored).
+# Restart the API after training:
+uvicorn app.main:app --reload
 
-    If RF models are not trained, API falls back to a transparent EMA baseline.
+Troubleshooting
 
-    No guarantee of data availability from free upstream providers.
+White screen / Vite error about styles.css
+Make sure frontend/src/styles.css exists and is imported in src/main.jsx.
+
+“No price data for this ticker” (404)
+Ticker typo or delisted (e.g., MFST vs MSFT). Try a different symbol.
+
+“Upstream price provider failed” (502)
+Data providers are flaky sometimes. Try again; baseline will still work for already-cached names.
+
+Prediction always says “baseline”
+You didn’t train RF v1, or the API can’t find models. Train with the command above and restart the backend.
+
+Scikit-learn warnings about feature names
+We pass numpy arrays at predict-time now, so warnings should be gone. If you see any, they’re harmless.
+
+All zeros / flat lines
+Usually means Yahoo returned empty/invalid rows. The backend now rejects “all-zero” payloads and tries fallbacks; refresh or change the ticker.
+
+License / disclaimer
+
+No license yet—assume private use.
+This is not financial advice. Signals are experimental and for research/paper trading only.
+
+Thank you for using MarketViewerPro!
