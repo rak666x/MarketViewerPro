@@ -1,7 +1,7 @@
 Stack: FastAPI (backend) + React/Vite (frontend) + Recharts (charts) + yfinance (data)
 Status: MVP working. Stable endpoints. Conservative signals. Good enough to iterate.
 
-#What v1 does
+# What v1 does
 
 Prices + indicators
 OHLCV with SMA/EMA/RSI, volume change, price/MA ratios. Caching + multiple data sources. If a provider hiccups, it returns last good data marked as stale: true.
@@ -19,7 +19,7 @@ Quickstart
 
 I run backend + frontend in two terminals. Windows commands shown (adjust for macOS/Linux).
 
-#1) Backend (FastAPI)
+# Backend (FastAPI)
 
 cd backend
 python -m venv venv
@@ -30,7 +30,7 @@ uvicorn app.main:app --reload
 API: http://127.0.0.1:8000
 Docs: http://127.0.0.1:8000/docs
 
-#2) Frontend (React + Vite)
+# Frontend (React + Vite)
 
 cd frontend
 npm install
@@ -49,7 +49,7 @@ Errors are structured. Common ones:
 {"code":"no_data"} → bad/unknown ticker (returns 404)
 {"code":"upstream_failed"} → data providers down (returns 502)
 
-#3) Training Model
+# Training Model
 
 cd backend
 venv\Scripts\activate
@@ -58,7 +58,7 @@ This writes models/*.joblib (gitignored).
 Restart the API after training:
 uvicorn app.main:app --reload
 
-#Troubleshooting
+# Troubleshooting
 
 White screen / Vite error about styles.css
 Make sure frontend/src/styles.css exists and is imported in src/main.jsx.
@@ -78,9 +78,9 @@ We pass numpy arrays at predict-time now, so warnings should be gone. If you see
 All zeros / flat lines
 Usually means Yahoo returned empty/invalid rows. The backend now rejects “all-zero” payloads and tries fallbacks; refresh or change the ticker.
 
-#License / disclaimer
+# License / disclaimer
 
 No license yet, assume private use.
 This is not financial advice. Signals are experimental and for research/paper trading only.
 
-#Thank you for using MarketViewerPro!
+# Thank you for using MarketViewerPro!
